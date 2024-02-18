@@ -1,6 +1,14 @@
 const express = require('express');
 const app = express();
-const port = 3000; // You can use any port number
+const port = 3000; 
+require('dotenv').config();
+const { Client, CheckoutAPI } = require('@adyen/api-library');
+
+const client = new Client({apiKey: process.env.ADYEN_API_KEY, environment: "TEST"});
+const checkout = new CheckoutAPI(client);
+
+const requestOptions = { idempotencyKey: "YOUR_IDEMPOTENCY_KEY" };
+
 
 app.listen(port, () => {
     console.log(`Listening at http://localhost:${port}`);
@@ -12,43 +20,21 @@ app.get('/', (req, res) => {
   });
 
 
-app.post('/paymentSession', async (req, res) => {
-    // Extracting dynamic values from the request body
-    const {
-      amountValue, // Amount in minor units
-      currency,
-      shopperReference,
-      reference, // Your order number
-      origin, // e.g., "https://www.yourwebsite.com"
-      returnUrl, // e.g., "https://www.yourshop.com/checkout/result"
-      countryCode,
-      shopperLocale,
-    } = req.body;
-  
-    try {
-      const sessionResponse = await checkout.paymentSession({
-        amount: {
-          currency,
-          value: amountValue,
-        },
-        reference,
-        shopperReference,
-        channel: "Web",
-        origin,
-        returnUrl,
-        countryCode,
-        shopperLocale,
-        merchantAccount: config.merchantAccount,
-        sdkVersion: "1.9.5" // Specify your SDK version here
-      });
-  
-      // Send the response back to the client
-      res.json(sessionResponse);
-    } catch (error) {
-      // Handle any errors
-      res.status(500).json({ error: error.message });
-    }
-  });
-  
 
+  app.post('/startSession', async (req, res) => {
+
+    checkout.session({
+        amount: Math.floor(Math.random() * 100 + 1) * 100,
+        returnUrl: 'localhost:3001',
+        reference: 1,
+        countryCode: US,
+        merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
+    })
+    .then((response) => {
+        console.log(response);
+    })
+    .catch((e) => {
+        console.log(e);
+    });
+  });
 
